@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>東方スペルカード抽選器 - Spell Card Roulette</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Serif+JP:wght@600;700&display=swap" rel="stylesheet">
+  <!-- PapaParse CDN with Subresource Integrity (SRI) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-main">
+        <h1 class="app-title">東方スペルカード抽選器</h1>
+        <p class="app-subtitle">Spell Card Roulette System - 全18作品・2,259枚対応</p>
+      </div>
+      <div class="header-meta">
+        <span id="data-status-badge" class="badge badge-info" role="status">CSV読み込み中...</span>
+        <label for="csv-file-input" class="btn-file-label" title="別のCSVファイルを読み込む">
+          📁 別のCSVを読込
+          <input type="file" id="csv-file-input" accept=".csv" class="hidden-input">
+        </label>
+      </div>
+    </header>
+
+    <!-- Main Layout Grid -->
+    <main class="main-layout">
+      <!-- Left Panel: Filters -->
+      <aside class="panel filter-panel" aria-label="絞り込み設定">
+        <h2 class="panel-title">絞り込み条件</h2>
+
+        <!-- Quick Preset Section -->
+        <section class="filter-group preset-group" aria-label="クイックプリセット">
+          <div class="filter-group-header">
+            <h3>⚡ クイックプリセット</h3>
+          </div>
+          <div class="preset-buttons-grid">
+            <button type="button" class="btn-preset" data-preset="main-normal">本編 (Normal)</button>
+            <button type="button" class="btn-preset" data-preset="extra-phantasm">Extra / Phantasm</button>
+            <button type="button" class="btn-preset" data-preset="survival">全耐久スペル</button>
+            <button type="button" class="btn-preset" data-preset="th08">永夜抄のみ</button>
+            <button type="button" class="btn-preset" data-preset="th128">妖精大戦争</button>
+            <button type="button" class="btn-preset btn-preset-reset" data-preset="reset">全条件リセット</button>
+          </div>
+        </section>
+
+        <!-- Work Selection (作品選択・階層構造) -->
+        <fieldset class="filter-group">
+          <legend class="filter-group-header">
+            <span>作品選択 (Work) <span class="required-mark">*必須</span></span>
+            <div class="btn-group-mini">
+              <button type="button" id="btn-work-all" class="btn-mini">全選択</button>
+              <button type="button" id="btn-work-none" class="btn-mini">全解除</button>
+            </div>
+          </legend>
+
+          <!-- Integer Series (ナンバリング本編) -->
+          <div class="work-subcategory">
+            <div class="work-subcategory-header">
+              <span class="subcategory-title">ナンバリング本編 (整数作品)</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-work-integer-all" class="btn-mini-sub">整数全選択</button>
+                <button type="button" id="btn-work-integer-none" class="btn-mini-sub">整数全解除</button>
+              </div>
+            </div>
+            <div id="work-options-integer" class="checkbox-grid work-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Fairy Wars (妖精大戦争) -->
+          <div class="work-subcategory">
+            <div class="work-subcategory-header">
+              <span class="subcategory-title">特殊ルート・システム作品</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-work-fairy-toggle" class="btn-mini-sub">妖精大戦争トグル</button>
+              </div>
+            </div>
+            <div id="work-options-fairy" class="checkbox-grid work-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Other Gaiden (その他の外伝作品) -->
+          <div class="work-subcategory">
+            <div class="work-subcategory-header">
+              <span class="subcategory-title">撮影・外伝作品 (小数点作品)</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-work-gaiden-all" class="btn-mini-sub">外伝全選択</button>
+                <button type="button" id="btn-work-gaiden-none" class="btn-mini-sub">外伝全解除</button>
+              </div>
+            </div>
+            <div id="work-options-gaiden" class="checkbox-grid work-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <p id="work-warning" class="error-text hidden" role="alert">※ 作品を1つ以上選択してください</p>
+        </fieldset>
+
+        <!-- Difficulty Selection (必須) -->
+        <fieldset class="filter-group">
+          <legend class="filter-group-header">
+            <span>難易度 (Difficulty) <span class="required-mark">*必須</span></span>
+            <div class="btn-group-mini">
+              <button type="button" id="btn-diff-all" class="btn-mini">全選択</button>
+              <button type="button" id="btn-diff-none" class="btn-mini">全解除</button>
+            </div>
+          </legend>
+          <div id="difficulty-options" class="checkbox-grid">
+            <!-- Dynamically populated from CSV (Phantasm, OverDrive, なし 含む) -->
+            <p class="placeholder-text">データ読み込み中...</p>
+          </div>
+          <p id="diff-warning" class="error-text hidden" role="alert">※ 難易度を1つ以上選択してください</p>
+        </fieldset>
+
+        <!-- Stage Selection (作品連動・動的生成) -->
+        <fieldset class="filter-group">
+          <legend class="filter-group-header">
+            <span>ステージ (Stage) <span class="required-mark">*必須</span></span>
+            <div class="btn-group-mini">
+              <button type="button" id="btn-stage-all" class="btn-mini">全選択</button>
+              <button type="button" id="btn-stage-none" class="btn-mini">全解除</button>
+            </div>
+          </legend>
+          <div id="stage-options" class="checkbox-grid">
+            <!-- Dynamically populated based on selected works -->
+            <p class="placeholder-text">作品を選択してください</p>
+          </div>
+          <p id="stage-warning" class="error-text hidden" role="alert">※ ステージを1つ以上選択してください</p>
+        </fieldset>
+
+        <!-- Character Filter (キャラクター絞り込み) -->
+        <section class="filter-group">
+          <div class="filter-group-header">
+            <h3>キャラクター (Character)</h3>
+            <button type="button" id="btn-char-clear" class="btn-mini">クリア</button>
+          </div>
+          <div class="character-filter-controls">
+            <input type="text" id="character-search-input" class="search-input" placeholder="キャラ名で絞り込み検索..." aria-label="キャラクター検索">
+            <select id="character-select" class="character-select" aria-label="キャラクター一覧から選択">
+              <option value="">すべてのキャラクター (指定なし)</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </section>
+
+        <!-- Survival Filter (耐久スペル絞り込み) -->
+        <fieldset class="filter-group" id="survival-filter-group">
+          <legend class="filter-group-header">
+            <span>耐久スペル (isSurvival)</span>
+          </legend>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="survival-filter" value="both" checked>
+              <span>両方含める</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="survival-filter" value="normal">
+              <span>通常のみ</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="survival-filter" value="survival">
+              <span>🛡️ 耐久のみ</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Final Spell Selection -->
+        <fieldset class="filter-group" id="final-filter-group">
+          <legend class="filter-group-header">
+            <span>Finalスペル</span>
+          </legend>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="final-filter" value="both" checked>
+              <span>両方含める</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="final-filter" value="normal">
+              <span>通常のみ</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="final-filter" value="final">
+              <span>Finalのみ</span>
+            </label>
+          </div>
+        </fieldset>
+      </aside>
+
+      <!-- Right Panel: Game Control & Output -->
+      <section class="panel game-panel" aria-label="ゲーム進行と結果表示">
+        <!-- Status Bar -->
+        <div class="status-bar" role="region" aria-label="ゲーム進行状態">
+          <div class="status-item">
+            <span class="status-label">状態</span>
+            <span id="game-status-text" class="status-value status-standby" aria-live="polite">待機中 (未開始)</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">条件合致残り候補</span>
+            <span id="filtered-count" class="status-value highlight-num" aria-live="polite">0</span>
+            <span class="status-sub">枚</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">山札残り / 全体</span>
+            <span class="status-value"><span id="deck-count" aria-live="polite">0</span> / <span id="total-count">0</span></span>
+            <span class="status-sub">枚</span>
+          </div>
+        </div>
+
+        <!-- Notification Banner -->
+        <div id="notification-bar" class="notification-bar hidden" role="status" aria-live="polite"></div>
+
+        <!-- Game Controls -->
+        <div class="control-actions">
+          <div class="game-cycle-buttons">
+            <button type="button" id="btn-start-game" class="btn btn-primary">
+              <span class="btn-icon">▶</span> ゲーム開始
+            </button>
+            <button type="button" id="btn-end-game" class="btn btn-secondary" disabled>
+              <span class="btn-icon">■</span> ゲーム終了
+            </button>
+          </div>
+
+          <div class="draw-action">
+            <button type="button" id="btn-draw" class="btn btn-draw" disabled>
+              <span class="btn-icon">🎲</span> スペル出力
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Display Area -->
+        <div class="card-display-container">
+          <!-- Standby state placeholder -->
+          <div id="display-placeholder" class="display-card placeholder-state">
+            <div class="placeholder-icon">⛩️</div>
+            <div class="placeholder-title">「ゲーム開始」を押してください</div>
+            <p class="placeholder-desc">ゲームを開始すると、絞り込み条件に合ったスペルカードを山札から1枚ずつランダムに抽選できます。</p>
+          </div>
+
+          <!-- Empty matching candidates state -->
+          <div id="display-empty" class="display-card empty-state hidden" role="alert">
+            <div class="empty-icon">⚠️</div>
+            <div class="empty-title">該当するスペルカードがありません</div>
+            <p class="empty-desc">現在の絞り込み条件に一致するスペルカードは残っていません（0件）。作品、難易度、ステージなどの条件を変更するか、ゲームを再開してください。</p>
+          </div>
+
+          <!-- Active Spell Card Result -->
+          <div id="display-card" class="display-card active-card hidden" role="region" aria-label="抽選されたスペルカード" aria-live="polite">
+            <!-- Card Header: Work & Character & Numbers -->
+            <div class="card-meta-top">
+              <div class="card-source-info">
+                <span id="card-work" class="card-work-badge">作品名</span>
+                <span id="card-character" class="card-character-name">キャラクター名</span>
+              </div>
+              <span id="card-no" class="card-no-badge">No.000 (通し #0000)</span>
+            </div>
+
+            <div class="card-header">
+              <div class="card-badges">
+                <span id="card-difficulty" class="card-diff-badge">Difficulty</span>
+                <span id="card-stage" class="card-stage-badge">Stage 1</span>
+                <span id="card-issurvival" class="card-survival-badge hidden">🛡️ 耐久</span>
+                <span id="card-isfinal" class="card-final-badge">Final</span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="spell-name-container">
+                <h2 id="card-name" class="spell-name">蛍符「地上の流星」</h2>
+              </div>
+
+              <!-- Challenge Result Assessment Status -->
+              <div id="card-result-badge-container" class="card-result-badge-container">
+                <span id="card-result-indicator" class="result-status-indicator status-waiting" role="status">
+                  ⏳ 挑戦中：取得または失敗を記録してください
+                </span>
+              </div>
+
+              <!-- Capture Result Buttons (取得 / 取得失敗) -->
+              <div class="capture-button-group">
+                <button type="button" id="btn-capture-success" class="btn btn-capture-success" disabled>
+                  <span class="btn-icon">✨</span> 取得 (成功)
+                </button>
+                <button type="button" id="btn-capture-failed" class="btn btn-capture-failed" disabled>
+                  <span class="btn-icon">💥</span> 取得失敗 (ミス)
+                </button>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <span id="card-pass-status" class="pass-status-text">※ このカードに対してパス可能</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auxiliary Action Buttons (パス / リストから削除) -->
+        <div class="card-manipulation-buttons">
+          <button type="button" id="btn-pass" class="btn btn-warning" disabled title="1回の出力につき1度だけ再抽選できます">
+            <span class="btn-icon">↩</span> パス (引き直し)
+          </button>
+          <button type="button" id="btn-remove" class="btn btn-danger" disabled title="表示中のスペルカードを山札から除外します">
+            <span class="btn-icon">✕</span> リストから削除
+          </button>
+        </div>
+
+        <!-- Accordion for History & Removed Cards -->
+        <div class="accordion-section">
+          <details class="accordion-item" open>
+            <summary class="accordion-header">
+              <span>出撃・挑戦履歴 (<span id="history-count">0</span>)</span>
+            </summary>
+            <div class="accordion-content">
+              <ul id="history-list" class="history-list" aria-label="出撃・挑戦履歴一覧">
+                <li class="history-empty">まだ履歴がありません</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="accordion-item">
+            <summary class="accordion-header">
+              <span>除外されたスペルカード (<span id="removed-count">0</span>)</span>
+            </summary>
+            <div class="accordion-content">
+              <ul id="removed-list" class="history-list" aria-label="除外されたスペルカード一覧">
+                <li class="history-empty">まだ除外されたカードはありません</li>
+              </ul>
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>東方スペルカード抽選器 &copy; 2026 - Browser-only Standalone Web Application</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="spellData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
