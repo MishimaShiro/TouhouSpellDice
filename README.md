@@ -73,7 +73,6 @@ TouhouSpellDice/
 ├── app.js            # メインロジック (フィルタエンジン、山札管理、UI制御)
 ├── spellData.js      # フォールバック用スペルカード埋め込みデータ
 ├── SpellList.csv     # スペルカードデータマスター (CSV)
-├── SpellList.xlsx    # データ編集用スプレッドシート
 ├── .gitignore        # Git除外設定
 └── README.md         # 本ドキュメント
 ```
