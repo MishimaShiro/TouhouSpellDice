@@ -71,11 +71,27 @@ TouhouSpellDice/
 ├── index.html        # アプリケーションのメインHTML
 ├── style.css         # スタイリング (和風ダークテーマ / レスポンシブ対応)
 ├── app.js            # メインロジック (フィルタエンジン、山札管理、UI制御)
-├── spellData.js      # フォールバック用スペルカード埋め込みデータ
-├── SpellList.csv     # スペルカードデータマスター (CSV)
+├── spellData.js      # フォールバック用スペルカード内蔵データ (自動生成)
+├── SpellList.csv     # スペルカードデータマスター (CSV) ※データ編集対象
+├── build_data.py     # CSVからspellData.jsを自動生成するビルドスクリプト (Python 3)
+├── build_data.bat    # Windows用ワンクリック自動生成バッチ
 ├── .gitignore        # Git除外設定
 └── README.md         # 本ドキュメント
 ```
+
+---
+
+## 🔄 スペルカードデータの更新手順 (データ管理の一本化)
+
+データの二重管理・同期ズレを防ぐため、**編集対象のマスターデータは `SpellList.csv` に一本化**されています。
+
+### A. GitHub (Web画面) または Git 上で編集する場合（推奨）
+1. GitHub 上で `SpellList.csv` を直接編集してコミット（またはローカルからプッシュ）します。
+2. **GitHub Actions（CI）が自動起動**し、`SpellList.csv` から `spellData.js` を自動生成してリポジトリに反映します（手動でのビルド作業は不要です）。
+
+### B. ローカル環境で編集する場合
+1. `SpellList.csv` を編集します（Shift-JIS / UTF-8 どちらでも可）。
+2. `build_data.bat` をダブルクリック（または `python build_data.py` を実行）すると、`spellData.js` が即座に更新されます。
 
 ---
 

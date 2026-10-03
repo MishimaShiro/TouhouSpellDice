@@ -1,0 +1,41 @@
+name: Build Spell Data
+
+on:
+  push:
+    paths:
+      - 'SpellList.csv'
+      - 'build_data.py'
+      - '.github/workflows/build-data.yml'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run build_data.py
+        run: python build_data.py
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status -s spellData.js)" ]; then
+            git add spellData.js
+            git commit -m "chore(data): auto-generate spellData.js from SpellList.csv [skip ci]"
+            git push
+          else
+            echo "No changes detected in spellData.js"
+          fi
