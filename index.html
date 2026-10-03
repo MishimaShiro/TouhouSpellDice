@@ -11,7 +11,7 @@
   <!-- PapaParse CDN with Subresource Integrity (SRI) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous"></script>
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20261003_3">
+  <link rel="stylesheet" href="style.css?v=20261003_4">
 </head>
 <body>
   <div class="app-container">
@@ -130,7 +130,7 @@
           <p id="diff-warning" class="error-text hidden" role="alert">※ 難易度を1つ以上選択してください</p>
         </fieldset>
 
-        <!-- Stage Selection (作品連動・動的生成) -->
+        <!-- Stage Selection (作品連動・動的生成・3スペース分離) -->
         <fieldset class="filter-group">
           <legend class="filter-group-header">
             <span>ステージ (Stage) <span class="required-mark">*必須</span></span>
@@ -139,10 +139,51 @@
               <button type="button" id="btn-stage-none" class="btn-mini">全解除</button>
             </div>
           </legend>
-          <div id="stage-options" class="checkbox-grid">
-            <!-- Dynamically populated based on selected works -->
-            <p class="placeholder-text">作品を選択してください</p>
+
+          <p id="stage-placeholder" class="placeholder-text">作品を選択してください</p>
+
+          <!-- 6面制ステージ (本編整数作品) -->
+          <div id="stage-subcategory-integer" class="stage-subcategory hidden">
+            <div class="stage-subcategory-header">
+              <span class="subcategory-title">６面制ステージ (本編)</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-stage-integer-all" class="btn-mini-sub">６面全選択</button>
+                <button type="button" id="btn-stage-integer-none" class="btn-mini-sub">６面全解除</button>
+              </div>
+            </div>
+            <div id="stage-options-integer" class="checkbox-grid stage-grid">
+              <!-- Dynamically populated -->
+            </div>
           </div>
+
+          <!-- 妖精大戦争 (ルート) -->
+          <div id="stage-subcategory-fairy" class="stage-subcategory hidden">
+            <div class="stage-subcategory-header">
+              <span class="subcategory-title">妖精大戦争 (ルート)</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-stage-fairy-all" class="btn-mini-sub">大戦争全選択</button>
+                <button type="button" id="btn-stage-fairy-none" class="btn-mini-sub">大戦争全解除</button>
+              </div>
+            </div>
+            <div id="stage-options-fairy" class="checkbox-grid stage-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- それ以外 (撮影・外伝作品等) -->
+          <div id="stage-subcategory-gaiden" class="stage-subcategory hidden">
+            <div class="stage-subcategory-header">
+              <span class="subcategory-title">その他のステージ (撮影・外伝等)</span>
+              <div class="btn-group-mini">
+                <button type="button" id="btn-stage-gaiden-all" class="btn-mini-sub">外伝全選択</button>
+                <button type="button" id="btn-stage-gaiden-none" class="btn-mini-sub">外伝全解除</button>
+              </div>
+            </div>
+            <div id="stage-options-gaiden" class="checkbox-grid stage-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
           <p id="stage-warning" class="error-text hidden" role="alert">※ ステージを1つ以上選択してください</p>
         </fieldset>
 
@@ -461,7 +502,7 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="spellData.js?v=20261003_3"></script>
-  <script src="app.js?v=20261003_3"></script>
+  <script src="spellData.js?v=20261003_4"></script>
+  <script src="app.js?v=20261003_4"></script>
 </body>
 </html>

@@ -45,6 +45,16 @@ const DIFFICULTY_ORDER = [
 ];
 
 /**
+ * 合体スペカ（複数人キャラ）判定ヘルパー
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isCombinedCharacter(name) {
+  if (!name) return false;
+  return name.includes('＆') || name.includes('&');
+}
+
+/**
  * ステージ自然順ソート用の優先度定数（マジックナンバーの排除）
  */
 const STAGE_SORT_PRIORITY = {
@@ -91,6 +101,27 @@ const SpellFilterEngine = {
   },
 
   /**
+   * 選択された作品群に含まれる有効難易度一覧を抽出（作品にない難易度を非表示化）
+   * @param {Array<Object>} cards
+   * @param {Set<string>} selectedWorks
+   * @returns {Array<string>}
+   */
+  extractAvailableDifficulties(cards, selectedWorks) {
+    if (!cards || !selectedWorks || selectedWorks.size === 0) return [];
+    const diffSet = new Set();
+    cards.forEach(card => {
+      if (selectedWorks.has(card.workId) && card.difficulty) {
+        diffSet.add(card.difficulty);
+      }
+    });
+    return Array.from(diffSet).sort((a, b) => {
+      const idxA = DIFFICULTY_ORDER.indexOf(a);
+      const idxB = DIFFICULTY_ORDER.indexOf(b);
+      return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+    });
+  },
+
+  /**
    * ステージソート用の優先度スコア計算（自然順ソート）
    * @param {string} stage
    * @returns {number}
@@ -128,24 +159,74 @@ const SpellFilterEngine = {
   },
 
   /**
-   * 選択された作品群に含まれる有効ステージ一覧を抽出してソート
+   * 選択された作品群に含まれる有効ステージ一覧を3つのスペース（６面制・妖精大戦争・それ以外）に分類抽出
+   * @param {Array<Object>} cards
+   * @param {Set<string>} selectedWorks
+   * @returns {{ integer: Array<string>, fairy: Array<string>, gaiden: Array<string>, allKeys: Array<string> }}
+   */
+  extractCategorizedStages(cards, selectedWorks) {
+    const result = {
+      integer: [],
+      fairy: [],
+      gaiden: [],
+      allKeys: []
+    };
+    if (!cards || !selectedWorks || selectedWorks.size === 0) return result;
+
+    const intStages = new Set();
+    const fairyStages = new Set();
+    const gaidenStages = new Set();
+    const orderMap = new Map();
+
+    cards.forEach(card => {
+      if (selectedWorks.has(card.workId) && card.stage && card.stage !== 'LW' && card.stage !== 'OD') {
+        const key = card.stageKey || `${card.stageCategory || 'INTEGER'}:${card.stage}`;
+        if (!orderMap.has(key)) {
+          orderMap.set(key, orderMap.size);
+        }
+        const category = card.stageCategory || (
+          WORK_CATEGORIES.FAIRY.includes(card.workId)
+            ? 'FAIRY'
+            : (WORK_CATEGORIES.INTEGER.includes(card.workId) ? 'INTEGER' : 'GAIDEN')
+        );
+
+        if (category === 'INTEGER') {
+          intStages.add(card.stage);
+        } else if (category === 'FAIRY') {
+          fairyStages.add(card.stage);
+        } else {
+          gaidenStages.add(card.stage);
+        }
+      }
+    });
+
+    result.integer = Array.from(intStages).sort((a, b) => this.getStageSortScore(a) - this.getStageSortScore(b));
+    result.fairy = Array.from(fairyStages).sort((a, b) => {
+      const keyA = `FAIRY:${a}`;
+      const keyB = `FAIRY:${b}`;
+      return (orderMap.get(keyA) ?? 0) - (orderMap.get(keyB) ?? 0);
+    });
+    result.gaiden = Array.from(gaidenStages).sort((a, b) => {
+      const keyA = `GAIDEN:${a}`;
+      const keyB = `GAIDEN:${b}`;
+      return (orderMap.get(keyA) ?? 0) - (orderMap.get(keyB) ?? 0);
+    });
+
+    result.integer.forEach(st => result.allKeys.push(`INTEGER:${st}`));
+    result.fairy.forEach(st => result.allKeys.push(`FAIRY:${st}`));
+    result.gaiden.forEach(st => result.allKeys.push(`GAIDEN:${st}`));
+
+    return result;
+  },
+
+  /**
+   * 選択された作品群に含まれる全有効ステージ一覧キーを抽出
    * @param {Array<Object>} cards
    * @param {Set<string>} selectedWorks
    * @returns {Array<string>}
    */
   extractAvailableStages(cards, selectedWorks) {
-    if (!cards || !selectedWorks || selectedWorks.size === 0) return [];
-
-    const stageSet = new Set();
-    cards.forEach(card => {
-      if (selectedWorks.has(card.workId)) {
-        if (card.stage && card.stage !== 'LW' && card.stage !== 'OD') {
-          stageSet.add(card.stage);
-        }
-      }
-    });
-
-    return Array.from(stageSet).sort((a, b) => this.getStageSortScore(a) - this.getStageSortScore(b));
+    return this.extractCategorizedStages(cards, selectedWorks).allKeys;
   },
 
   /**
@@ -212,7 +293,7 @@ const SpellFilterEngine = {
       return true;
     }
 
-    return selectedStages ? selectedStages.has(card.stage) : false;
+    return selectedStages ? (selectedStages.has(card.stageKey) || selectedStages.has(card.stage)) : false;
   },
 
   /**
@@ -491,8 +572,10 @@ class AppStore {
       allCards: [],
       worksList: [],
       availableDifficulties: [],
+      availableStagesInfo: { integer: [], fairy: [], gaiden: [], allKeys: [] },
       availableStages: [],
       allCharacters: [],
+      characterOrderMap: new Map(),
       hasSurvivalColumn: false,
       hasFinalColumn: false,
 
@@ -573,8 +656,10 @@ class AppStore {
       allCards: payload.allCards,
       worksList: payload.worksList,
       availableDifficulties: payload.availableDifficulties,
+      availableStagesInfo: payload.availableStagesInfo,
       availableStages: payload.availableStages,
       allCharacters: payload.allCharacters,
+      characterOrderMap: payload.characterOrderMap,
       hasSurvivalColumn: payload.hasSurvivalColumn,
       hasFinalColumn: payload.hasFinalColumn,
       selectedWorks: new Set(payload.selectedWorks),
@@ -586,17 +671,35 @@ class AppStore {
     });
   }
 
-  updateWorks(worksSet, preserveStageSelection = true) {
-    const availableStages = SpellFilterEngine.extractAvailableStages(this._state.allCards, worksSet);
+  updateWorks(worksSet, preserveStageSelection = true, preserveDifficultySelection = true) {
+    // 1. 作品に存在する難易度を動的再抽出
+    const availableDifficulties = SpellFilterEngine.extractAvailableDifficulties(this._state.allCards, worksSet);
+    let selectedDifficulties;
+
+    if (preserveDifficultySelection) {
+      selectedDifficulties = new Set();
+      this._state.selectedDifficulties.forEach(diff => {
+        if (availableDifficulties.includes(diff)) selectedDifficulties.add(diff);
+      });
+      if (selectedDifficulties.size === 0 && availableDifficulties.length > 0) {
+        availableDifficulties.forEach(diff => selectedDifficulties.add(diff));
+      }
+    } else {
+      selectedDifficulties = new Set(availableDifficulties);
+    }
+
+    // 2. ステージを動的再抽出（3スペース分離）
+    const stagesInfo = SpellFilterEngine.extractCategorizedStages(this._state.allCards, worksSet);
+    const availableStages = stagesInfo.allKeys;
     let selectedStages;
 
     if (preserveStageSelection) {
       selectedStages = new Set();
-      this._state.selectedStages.forEach(st => {
-        if (availableStages.includes(st)) selectedStages.add(st);
+      this._state.selectedStages.forEach(stKey => {
+        if (availableStages.includes(stKey)) selectedStages.add(stKey);
       });
       if (selectedStages.size === 0 && availableStages.length > 0) {
-        availableStages.forEach(st => selectedStages.add(st));
+        availableStages.forEach(stKey => selectedStages.add(stKey));
       }
     } else {
       selectedStages = new Set(availableStages);
@@ -604,6 +707,9 @@ class AppStore {
 
     this.setState({
       selectedWorks: new Set(worksSet),
+      availableDifficulties,
+      selectedDifficulties,
+      availableStagesInfo: stagesInfo,
       availableStages,
       selectedStages
     });
@@ -633,7 +739,7 @@ class AppStore {
     if (this._state.allCards.length === 0) return;
 
     let selectedWorks;
-    let selectedDifficulties;
+    let initialDiffs = null;
     let selectedCharacter = '';
     let survivalFilter = 'both';
     let finalFilter = 'both';
@@ -641,38 +747,48 @@ class AppStore {
     switch (presetType) {
       case 'main-normal':
         selectedWorks = new Set(WORK_CATEGORIES.INTEGER);
-        selectedDifficulties = new Set(['Normal']);
+        initialDiffs = ['Normal'];
         break;
       case 'extra-phantasm':
         selectedWorks = new Set(WORK_CATEGORIES.INTEGER);
-        selectedDifficulties = new Set(['Extra', 'Phantasm']);
+        initialDiffs = ['Extra', 'Phantasm'];
         break;
       case 'survival':
         selectedWorks = new Set(this._state.worksList.map(w => w.workId));
-        selectedDifficulties = new Set(this._state.availableDifficulties);
         survivalFilter = 'survival';
         break;
       case 'th08':
         selectedWorks = new Set(['th08']);
-        selectedDifficulties = new Set(this._state.availableDifficulties);
         break;
       case 'th128':
         selectedWorks = new Set(['th12.8']);
-        selectedDifficulties = new Set(this._state.availableDifficulties);
         break;
       case 'reset':
       default:
         selectedWorks = new Set(this._state.worksList.map(w => w.workId));
-        selectedDifficulties = new Set(this._state.availableDifficulties);
         break;
     }
 
-    const availableStages = SpellFilterEngine.extractAvailableStages(this._state.allCards, selectedWorks);
+    const availableDifficulties = SpellFilterEngine.extractAvailableDifficulties(this._state.allCards, selectedWorks);
+    let selectedDifficulties;
+    if (initialDiffs) {
+      selectedDifficulties = new Set(initialDiffs.filter(d => availableDifficulties.includes(d)));
+      if (selectedDifficulties.size === 0 && availableDifficulties.length > 0) {
+        selectedDifficulties = new Set(availableDifficulties);
+      }
+    } else {
+      selectedDifficulties = new Set(availableDifficulties);
+    }
+
+    const stagesInfo = SpellFilterEngine.extractCategorizedStages(this._state.allCards, selectedWorks);
+    const availableStages = stagesInfo.allKeys;
     const selectedStages = new Set(availableStages);
 
     this.setState({
       selectedWorks,
+      availableDifficulties,
       selectedDifficulties,
+      availableStagesInfo: stagesInfo,
       availableStages,
       selectedStages,
       selectedCharacter,
@@ -721,7 +837,19 @@ const DOM = {
   btnDiffNone: document.getElementById('btn-diff-none'),
 
   // ステージ関連
-  stageOptions: document.getElementById('stage-options'),
+  stagePlaceholder: document.getElementById('stage-placeholder'),
+  stageSubcategoryInteger: document.getElementById('stage-subcategory-integer'),
+  stageSubcategoryFairy: document.getElementById('stage-subcategory-fairy'),
+  stageSubcategoryGaiden: document.getElementById('stage-subcategory-gaiden'),
+  stageOptionsInteger: document.getElementById('stage-options-integer'),
+  stageOptionsFairy: document.getElementById('stage-options-fairy'),
+  stageOptionsGaiden: document.getElementById('stage-options-gaiden'),
+  btnStageIntegerAll: document.getElementById('btn-stage-integer-all'),
+  btnStageIntegerNone: document.getElementById('btn-stage-integer-none'),
+  btnStageFairyAll: document.getElementById('btn-stage-fairy-all'),
+  btnStageFairyNone: document.getElementById('btn-stage-fairy-none'),
+  btnStageGaidenAll: document.getElementById('btn-stage-gaiden-all'),
+  btnStageGaidenNone: document.getElementById('btn-stage-gaiden-none'),
   stageWarning: document.getElementById('stage-warning'),
   btnStageAll: document.getElementById('btn-stage-all'),
   btnStageNone: document.getElementById('btn-stage-none'),
@@ -1054,7 +1182,7 @@ const ViewRenderer = {
     this.renderWorkOptions();
     this.renderDifficultyOptions();
     this.renderCharacterOptions();
-    this.renderStageOptions(appStore.getState().availableStages);
+    this.renderStageOptions(appStore.getState().availableStagesInfo);
   },
 
   /**
@@ -1084,7 +1212,7 @@ const ViewRenderer = {
         } else {
           current.delete(work.workId);
         }
-        appStore.updateWorks(current, true);
+        appStore.updateWorks(current, true, true);
       });
 
       const span = document.createElement('span');
@@ -1104,11 +1232,19 @@ const ViewRenderer = {
   },
 
   /**
-   * 難易度チェックボックスのレンダリング
+   * 難易度チェックボックスのレンダリング（選択中作品に存在する難易度のみ動的表示）
    */
   renderDifficultyOptions() {
     DOM.difficultyOptions.innerHTML = '';
     const { availableDifficulties, selectedDifficulties } = appStore.getState();
+
+    if (availableDifficulties.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'placeholder-text';
+      p.textContent = '※ 選択作品に難易度設定はありません';
+      DOM.difficultyOptions.appendChild(p);
+      return;
+    }
 
     availableDifficulties.forEach(diff => {
       const label = document.createElement('label');
@@ -1139,47 +1275,144 @@ const ViewRenderer = {
   },
 
   /**
-   * ステージチェックボックスのレンダリング（差分同期・作品連動）
-   * @param {Array<string>} sortedStages
+   * ステージチェックボックスのレンダリング（3スペース分離・差分同期・作品連動）
+   * @param {Object} stagesInfo { integer, fairy, gaiden, allKeys }
    */
-  renderStageOptions(sortedStages) {
+  renderStageOptions(stagesInfo) {
     const { selectedWorks, selectedStages } = appStore.getState();
-    DOM.stageOptions.innerHTML = '';
+    const info = stagesInfo || appStore.getState().availableStagesInfo || { integer: [], fairy: [], gaiden: [], allKeys: [] };
 
-    if (sortedStages.length === 0) {
-      const p = document.createElement('p');
-      p.className = 'placeholder-text';
-      p.textContent = selectedWorks.size === 0 ? '作品を選択してください' : '※ 選択作品にステージ区分はありません';
-      DOM.stageOptions.appendChild(p);
-      return;
+    DOM.stageOptionsInteger.innerHTML = '';
+    DOM.stageOptionsFairy.innerHTML = '';
+    DOM.stageOptionsGaiden.innerHTML = '';
+
+    const hasInteger = info.integer && info.integer.length > 0;
+    const hasFairy = info.fairy && info.fairy.length > 0;
+    const hasGaiden = info.gaiden && info.gaiden.length > 0;
+    const hasAny = hasInteger || hasFairy || hasGaiden;
+
+    // プレースホルダーの表示切替
+    if (DOM.stagePlaceholder) {
+      if (!hasAny) {
+        DOM.stagePlaceholder.textContent = selectedWorks.size === 0
+          ? '作品を選択してください'
+          : '※ 選択作品にステージ区分はありません';
+        DOM.stagePlaceholder.classList.remove('hidden');
+      } else {
+        DOM.stagePlaceholder.classList.add('hidden');
+      }
     }
 
-    sortedStages.forEach(st => {
-      const label = document.createElement('label');
-      label.className = 'check-label';
+    // 1. ６面制 (本編)
+    if (DOM.stageSubcategoryInteger) {
+      if (hasInteger) {
+        DOM.stageSubcategoryInteger.classList.remove('hidden');
+        info.integer.forEach(st => {
+          const key = `INTEGER:${st}`;
+          const label = document.createElement('label');
+          label.className = 'check-label';
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.value = st;
-      checkbox.checked = selectedStages.has(st);
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = key;
+          checkbox.checked = selectedStages.has(key) || selectedStages.has(st);
 
-      checkbox.addEventListener('change', () => {
-        const current = new Set(appStore.getState().selectedStages);
-        if (checkbox.checked) {
-          current.add(st);
-        } else {
-          current.delete(st);
-        }
-        appStore.updateStages(current);
-      });
+          checkbox.addEventListener('change', () => {
+            const current = new Set(appStore.getState().selectedStages);
+            if (checkbox.checked) {
+              current.add(key);
+            } else {
+              current.delete(key);
+              current.delete(st);
+            }
+            appStore.updateStages(current);
+          });
 
-      const span = document.createElement('span');
-      span.textContent = SpellFilterEngine.formatStageLabel(st);
+          const span = document.createElement('span');
+          span.textContent = SpellFilterEngine.formatStageLabel(st);
 
-      label.appendChild(checkbox);
-      label.appendChild(span);
-      DOM.stageOptions.appendChild(label);
-    });
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          DOM.stageOptionsInteger.appendChild(label);
+        });
+      } else {
+        DOM.stageSubcategoryInteger.classList.add('hidden');
+      }
+    }
+
+    // 2. 妖精大戦争 (ルート)
+    if (DOM.stageSubcategoryFairy) {
+      if (hasFairy) {
+        DOM.stageSubcategoryFairy.classList.remove('hidden');
+        info.fairy.forEach(st => {
+          const key = `FAIRY:${st}`;
+          const label = document.createElement('label');
+          label.className = 'check-label';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = key;
+          checkbox.checked = selectedStages.has(key) || selectedStages.has(st);
+
+          checkbox.addEventListener('change', () => {
+            const current = new Set(appStore.getState().selectedStages);
+            if (checkbox.checked) {
+              current.add(key);
+            } else {
+              current.delete(key);
+              current.delete(st);
+            }
+            appStore.updateStages(current);
+          });
+
+          const span = document.createElement('span');
+          span.textContent = SpellFilterEngine.formatStageLabel(st);
+
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          DOM.stageOptionsFairy.appendChild(label);
+        });
+      } else {
+        DOM.stageSubcategoryFairy.classList.add('hidden');
+      }
+    }
+
+    // 3. それ以外 (撮影・外伝等)
+    if (DOM.stageSubcategoryGaiden) {
+      if (hasGaiden) {
+        DOM.stageSubcategoryGaiden.classList.remove('hidden');
+        info.gaiden.forEach(st => {
+          const key = `GAIDEN:${st}`;
+          const label = document.createElement('label');
+          label.className = 'check-label';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = key;
+          checkbox.checked = selectedStages.has(key) || selectedStages.has(st);
+
+          checkbox.addEventListener('change', () => {
+            const current = new Set(appStore.getState().selectedStages);
+            if (checkbox.checked) {
+              current.add(key);
+            } else {
+              current.delete(key);
+              current.delete(st);
+            }
+            appStore.updateStages(current);
+          });
+
+          const span = document.createElement('span');
+          span.textContent = SpellFilterEngine.formatStageLabel(st);
+
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          DOM.stageOptionsGaiden.appendChild(label);
+        });
+      } else {
+        DOM.stageSubcategoryGaiden.classList.add('hidden');
+      }
+    }
   },
 
   /**
@@ -1205,11 +1438,11 @@ const ViewRenderer = {
   },
 
   /**
-   * キャラクタードロップダウンの更新（選択中作品の出現キャラ連動）
+   * キャラクタードロップダウンの更新（選択中作品の出現キャラ連動、CSV出現順、合体スペカ遅延・単体キャラ優先）
    * @param {string} query
    */
   updateCharacterDropdownList(query = '') {
-    const { allCards, selectedWorks, allCharacters, selectedCharacter } = appStore.getState();
+    const { allCards, selectedWorks, allCharacters, selectedCharacter, characterOrderMap } = appStore.getState();
     const activeCharSet = new Set();
 
     allCards.forEach(card => {
@@ -1218,9 +1451,23 @@ const ViewRenderer = {
       }
     });
 
-    const baseChars = activeCharSet.size > 0
-      ? Array.from(activeCharSet).sort((a, b) => a.localeCompare(b, 'ja'))
-      : allCharacters;
+    const compareChars = (a, b) => {
+      const isCombA = isCombinedCharacter(a) ? 1 : 0;
+      const isCombB = isCombinedCharacter(b) ? 1 : 0;
+      if (isCombA !== isCombB) {
+        return isCombA - isCombB; // 単体キャラ(0)優先、合体スペカ(1)後回し
+      }
+      const orderA = characterOrderMap && characterOrderMap.has(a) ? characterOrderMap.get(a) : 9999;
+      const orderB = characterOrderMap && characterOrderMap.has(b) ? characterOrderMap.get(b) : 9999;
+      return orderA - orderB; // CSV出現順
+    };
+
+    let baseChars;
+    if (activeCharSet.size > 0) {
+      baseChars = Array.from(activeCharSet).sort(compareChars);
+    } else {
+      baseChars = allCharacters;
+    }
 
     const filteredChars = query
       ? baseChars.filter(c => c.toLowerCase().includes(query))
@@ -1248,7 +1495,7 @@ const ViewRenderer = {
    * フィルターUIコントロールのチェック状態をストア状態と強制同期
    */
   syncFilterControlsUI() {
-    const { selectedWorks, selectedDifficulties, survivalFilter, finalFilter, selectedCharacter } = appStore.getState();
+    const { selectedWorks, selectedDifficulties, selectedStages, survivalFilter, finalFilter, selectedCharacter } = appStore.getState();
 
     document.querySelectorAll('#work-options-integer input, #work-options-fairy input, #work-options-gaiden input').forEach(cb => {
       cb.checked = selectedWorks.has(cb.value);
@@ -1256,6 +1503,10 @@ const ViewRenderer = {
 
     document.querySelectorAll('#difficulty-options input').forEach(cb => {
       cb.checked = selectedDifficulties.has(cb.value);
+    });
+
+    document.querySelectorAll('#stage-options-integer input, #stage-options-fairy input, #stage-options-gaiden input').forEach(cb => {
+      cb.checked = selectedStages.has(cb.value);
     });
 
     DOM.survivalRadios.forEach(rb => {
@@ -1512,7 +1763,7 @@ const DataService = {
 
     const cards = [];
     const worksMap = new Map();
-    const characterSet = new Set();
+    const characterOrderMap = new Map();
     const difficultySet = new Set();
     let hasSurvival = false;
     let hasFinal = false;
@@ -1566,12 +1817,12 @@ const DataService = {
       if (rawFinal !== '') hasFinal = true;
 
       // 作品マスタ収集
-      if (!worksMap.has(workId)) {
-        let category = 'INTEGER';
-        if (WORK_CATEGORIES.FAIRY.includes(workId)) category = 'FAIRY';
-        else if (WORK_CATEGORIES.GAIDEN.includes(workId)) category = 'GAIDEN';
-        else if (!isIntegerWork) category = 'GAIDEN';
+      let category = 'INTEGER';
+      if (WORK_CATEGORIES.FAIRY.includes(workId)) category = 'FAIRY';
+      else if (WORK_CATEGORIES.GAIDEN.includes(workId)) category = 'GAIDEN';
+      else if (!isIntegerWork) category = 'GAIDEN';
 
+      if (!worksMap.has(workId)) {
         worksMap.set(workId, {
           workId,
           workName,
@@ -1580,10 +1831,14 @@ const DataService = {
         });
       }
 
-      if (character && character !== '不明') {
-        characterSet.add(character);
+      // キャラクター初回出現順の記録（合体スペカ遅延・単体優先用）
+      if (character && character !== '不明' && !characterOrderMap.has(character)) {
+        characterOrderMap.set(character, characterOrderMap.size);
       }
       difficultySet.add(difficulty);
+
+      const stageCategory = category;
+      const stageKey = stage ? `${stageCategory}:${stage}` : '';
 
       cards.push({
         id,
@@ -1591,6 +1846,8 @@ const DataService = {
         workName,
         spellNo,
         stage,
+        stageCategory,
+        stageKey,
         character,
         difficulty,
         name,
@@ -1601,18 +1858,18 @@ const DataService = {
     });
 
     const worksList = Array.from(worksMap.values());
-    const allCharacters = Array.from(characterSet).sort((a, b) => a.localeCompare(b, 'ja'));
-
-    // 難易度ソート
-    const availableDifficulties = Array.from(difficultySet).sort((a, b) => {
-      const idxA = DIFFICULTY_ORDER.indexOf(a);
-      const idxB = DIFFICULTY_ORDER.indexOf(b);
-      return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+    const allCharacters = Array.from(characterOrderMap.keys()).sort((a, b) => {
+      const isCombA = isCombinedCharacter(a) ? 1 : 0;
+      const isCombB = isCombinedCharacter(b) ? 1 : 0;
+      if (isCombA !== isCombB) return isCombA - isCombB; // 単体キャラ優先、合体スペカ遅延
+      return (characterOrderMap.get(a) ?? 0) - (characterOrderMap.get(b) ?? 0); // CSV出現順
     });
 
     const selectedWorks = new Set(worksList.map(w => w.workId));
+    const availableDifficulties = SpellFilterEngine.extractAvailableDifficulties(cards, selectedWorks);
     const selectedDifficulties = new Set(availableDifficulties);
-    const availableStages = SpellFilterEngine.extractAvailableStages(cards, selectedWorks);
+    const availableStagesInfo = SpellFilterEngine.extractCategorizedStages(cards, selectedWorks);
+    const availableStages = availableStagesInfo.allKeys;
     const selectedStages = new Set(availableStages);
 
     // AppStore の更新（単方向データフロー）
@@ -1620,8 +1877,10 @@ const DataService = {
       allCards: cards,
       worksList,
       availableDifficulties,
+      availableStagesInfo,
       availableStages,
       allCharacters,
+      characterOrderMap,
       hasSurvivalColumn: hasSurvival,
       hasFinalColumn: hasFinal,
       selectedWorks,
@@ -1866,9 +2125,10 @@ function setupEventListeners() {
     btn.addEventListener('click', () => {
       const presetType = btn.getAttribute('data-preset');
       appStore.applyPreset(presetType);
-      ViewRenderer.syncFilterControlsUI();
-      ViewRenderer.renderStageOptions(appStore.getState().availableStages);
+      ViewRenderer.renderDifficultyOptions();
+      ViewRenderer.renderStageOptions(appStore.getState().availableStagesInfo);
       ViewRenderer.updateCharacterDropdownList();
+      ViewRenderer.syncFilterControlsUI();
       ViewRenderer.showNotification(`プリセット「${getPresetDisplayName(presetType)}」を適用しました。`, 'info');
     });
   });
@@ -1935,14 +2195,54 @@ function setupEventListeners() {
     }
   });
 
-  // 5. ステージ一括選択/解除（高階関数によるDRY化）
+  // 5. ステージ一括選択/解除（全ステージおよび各スペース個別）
+  // 全体
   bindBulkToggle({
     btnAll: DOM.btnStageAll,
     btnNone: DOM.btnStageNone,
     getTargetValues: () => appStore.getState().availableStages,
-    containerSelector: '#stage-options',
+    containerSelector: '#stage-options-integer, #stage-options-fairy, #stage-options-gaiden',
     onUpdate: (values, isSelectAll) => {
       appStore.updateStages(isSelectAll ? values : []);
+    }
+  });
+
+  // ６面制 (本編)
+  bindBulkToggle({
+    btnAll: DOM.btnStageIntegerAll,
+    btnNone: DOM.btnStageIntegerNone,
+    getTargetValues: () => (appStore.getState().availableStagesInfo?.integer || []).map(st => `INTEGER:${st}`),
+    containerSelector: '#stage-options-integer',
+    onUpdate: (values, isSelectAll) => {
+      const current = new Set(appStore.getState().selectedStages);
+      values.forEach(k => isSelectAll ? current.add(k) : current.delete(k));
+      appStore.updateStages(current);
+    }
+  });
+
+  // 妖精大戦争 (ルート)
+  bindBulkToggle({
+    btnAll: DOM.btnStageFairyAll,
+    btnNone: DOM.btnStageFairyNone,
+    getTargetValues: () => (appStore.getState().availableStagesInfo?.fairy || []).map(st => `FAIRY:${st}`),
+    containerSelector: '#stage-options-fairy',
+    onUpdate: (values, isSelectAll) => {
+      const current = new Set(appStore.getState().selectedStages);
+      values.forEach(k => isSelectAll ? current.add(k) : current.delete(k));
+      appStore.updateStages(current);
+    }
+  });
+
+  // その他のステージ (撮影・外伝等)
+  bindBulkToggle({
+    btnAll: DOM.btnStageGaidenAll,
+    btnNone: DOM.btnStageGaidenNone,
+    getTargetValues: () => (appStore.getState().availableStagesInfo?.gaiden || []).map(st => `GAIDEN:${st}`),
+    containerSelector: '#stage-options-gaiden',
+    onUpdate: (values, isSelectAll) => {
+      const current = new Set(appStore.getState().selectedStages);
+      values.forEach(k => isSelectAll ? current.add(k) : current.delete(k));
+      appStore.updateStages(current);
     }
   });
 
@@ -1979,10 +2279,11 @@ function setupEventListeners() {
   appStore.subscribe((newState, prevState, changedKeys) => {
     const onlyGaiden = SpellFilterEngine.isOnlyGaidenSelected(newState.selectedWorks);
 
-    // 作品選択のバリデーション警告
+    // 作品選択のバリデーション警告 & 連動UI更新
     if (changedKeys.includes('selectedWorks')) {
       DOM.workWarning.classList.toggle('hidden', newState.selectedWorks.size > 0);
-      ViewRenderer.renderStageOptions(newState.availableStages);
+      ViewRenderer.renderDifficultyOptions();
+      ViewRenderer.renderStageOptions(newState.availableStagesInfo);
       ViewRenderer.updateCharacterDropdownList(DOM.characterSearchInput.value.trim().toLowerCase());
     }
 

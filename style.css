@@ -433,6 +433,30 @@ legend.filter-group-header {
   gap: 0.35rem;
 }
 
+/* Stage Subcategories */
+.stage-subcategory {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  padding: 0.65rem;
+  margin-bottom: 0.6rem;
+  clear: both;
+}
+
+.stage-subcategory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.stage-grid {
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.35rem;
+}
+
 /* Checkbox Grid */
 .checkbox-grid {
   display: grid;
