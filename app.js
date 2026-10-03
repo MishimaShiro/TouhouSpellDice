@@ -146,6 +146,7 @@ const SpellFilterEngine = {
 
   /**
    * ステージ表示ラベルのフォーマット
+   * （６面制や妖精大戦争は「Stage X」、LEVEL系や日付・曜日の外伝系はそのまま表示）
    * @param {string} stage
    * @returns {string}
    */
@@ -155,7 +156,14 @@ const SpellFilterEngine = {
     if (stage === 'Ph') return 'Stage Phantasm';
     if (stage === 'OD') return 'OverDrive';
     if (stage === 'LW') return 'Last Word';
-    return `Stage ${stage}`;
+
+    // ６面制（1, 2, ..., 4A, 6B）または 妖精大戦争ルート（A-1, A1-2, B-1, C2-3等）の場合のみ Stage を付与
+    if (/^(\d+[A-Z]?|[A-C]\d*-\d+)$/.test(stage)) {
+      return `Stage ${stage}`;
+    }
+
+    // 外伝・撮影等（LEVEL 1〜, SPOILER, 一日目〜, 月曜日〜, ナイトメアダイアリー等）はStageなしでそのまま返す
+    return stage;
   },
 
   /**
@@ -1009,7 +1017,15 @@ const ViewRenderer = {
     if (item.stage) {
       const stageSpan = document.createElement('span');
       stageSpan.className = 'history-stage';
-      stageSpan.textContent = item.stage === 'Ex' ? 'Extra' : item.stage === 'Ph' ? 'Ph' : `St.${item.stage}`;
+      let stageText = item.stage;
+      if (item.stage === 'Ex') {
+        stageText = 'Extra';
+      } else if (item.stage === 'Ph') {
+        stageText = 'Ph';
+      } else if (/^(\d+[A-Z]?|[A-C]\d*-\d+)$/.test(item.stage)) {
+        stageText = `St.${item.stage}`;
+      }
+      stageSpan.textContent = stageText;
       left.appendChild(stageSpan);
     }
 
