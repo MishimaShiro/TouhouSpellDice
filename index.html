@@ -22,11 +22,20 @@
         <p class="app-subtitle">Spell Card Roulette System - 全18作品・2,259枚対応</p>
       </div>
       <div class="header-meta">
+        <button type="button" id="btn-open-readme" class="btn-readme" aria-haspopup="dialog" aria-controls="readme-modal" title="使い方・仕様・READMEを表示">
+          📖 使い方 / README
+        </button>
         <span id="data-status-badge" class="badge badge-info" role="status">CSV読み込み中...</span>
         <label for="csv-file-input" class="btn-file-label" title="別のCSVファイルを読み込む">
           📁 別のCSVを読込
           <input type="file" id="csv-file-input" accept=".csv" class="hidden-input">
         </label>
+        <a href="https://github.com/MishimaShiro/TouhouSpellDice" target="_blank" rel="noopener noreferrer" class="btn-github-link" title="GitHubリポジトリを開く" aria-label="GitHubリポジトリを開く">
+          <svg class="github-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span class="github-text">GitHub</span>
+        </a>
       </div>
     </header>
 
@@ -340,8 +349,115 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>東方スペルカード抽選器 &copy; 2026 - Browser-only Standalone Web Application</p>
+      <div class="footer-links">
+        <button type="button" id="btn-footer-readme" class="footer-link-btn">📖 使い方 / README</button>
+        <span class="footer-divider">|</span>
+        <a href="https://github.com/MishimaShiro/TouhouSpellDice" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub (ソースコード & README)</a>
+        <span class="footer-divider">|</span>
+        <a href="https://touhou-project.news/guideline/" target="_blank" rel="noopener noreferrer" class="footer-link">東方Project二次創作ガイドライン</a>
+      </div>
+      <p class="footer-copy">東方スペルカード抽選器 &copy; 2026 - ファンメイド二次創作Webツール</p>
     </footer>
+  </div>
+
+  <!-- README / Guide Modal Dialog -->
+  <div id="readme-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="readme-modal-title">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div class="modal-title-area">
+          <span class="modal-badge">GUIDE & DOCS</span>
+          <h2 id="readme-modal-title" class="modal-title">📖 東方スペルカード抽選器 - 使い方 & 仕様</h2>
+        </div>
+        <button type="button" id="btn-close-readme" class="btn-modal-close" aria-label="閉じる" title="閉じる (Esc)">✕</button>
+      </header>
+
+      <div class="modal-body">
+        <!-- Live site alert -->
+        <div class="modal-alert-box">
+          <p class="modal-alert-title">🌐 公開Webサイト</p>
+          <p class="modal-alert-desc">インストール不要で、ブラウザからいつでも直接遊べます（PC・スマホ対応）：</p>
+          <p class="modal-url-line">
+            <a href="https://mishimashiro.github.io/TouhouSpellDice/" target="_blank" rel="noopener noreferrer">https://mishimashiro.github.io/TouhouSpellDice/</a>
+          </p>
+        </div>
+
+        <section class="modal-section">
+          <h3>🌟 本ツールについて</h3>
+          <p>
+            東方Projectのスペルカードを条件付きでランダム抽選できるWebアプリケーションです。<br>
+            ナンバリング整数作品（紅魔郷〜獣王園）に加え、妖精大戦争、撮影・外伝作品（文花帖・ダブルスポイラー・弾幕アマノジャク・秘封ナイトメアダイアリー）を含む<strong>全18作品・2,259枚</strong>のスペルカードデータを網羅しています。<br>
+            お題プレイ、縛りプレイ、スペルカード鑑賞、練習ルーレットなどにご活用ください。
+          </p>
+        </section>
+
+        <section class="modal-section">
+          <h3>🎮 基本的な遊び方</h3>
+          <ol class="modal-steps-list">
+            <li>
+              <strong>絞り込み条件を選択する</strong><br>
+              左パネルで「作品」「難易度」「ステージ」「キャラクター」「耐久/Final」を設定します。「⚡ クイックプリセット」を使うと、「本編 (Normal)」「Extra / Phantasm」「全耐久スペル」などをワンクリックで即時セットできます。
+            </li>
+            <li>
+              <strong>「▶ ゲーム開始」ボタンを押す</strong><br>
+              条件に一致したスペルカードがシャッフルされ、山札（デッキ）が構築されてゲームが始まります。
+            </li>
+            <li>
+              <strong>「🎲 スペル出力」ボタンを押す</strong><br>
+              山札から1枚ずつスペルカードがランダムに出力され、画面中央にカード形式で表示されます。
+            </li>
+            <li>
+              <strong>結果を記録する（「✨ 取得」または「💥 取得失敗」）</strong><br>
+              ゲーム内でスペルカードに挑戦した結果を記録できます。結果は下部の「出撃・挑戦履歴」にリアルタイムで反映されます。
+            </li>
+            <li>
+              <strong>補助機能の活用</strong>
+              <ul class="modal-sub-list">
+                <li><strong>↩ パス (引き直し):</strong> 1回の出力につき1度だけ、現在のカードを山札に戻して別のカードを引き直せます。</li>
+                <li><strong>✕ リストから削除:</strong> 表示中のカードを山札から除外します（出撃したくないスペルがある場合に便利です）。</li>
+              </ul>
+            </li>
+            <li>
+              <strong>「■ ゲーム終了」ボタンを押す</strong><br>
+              いつでもゲームを終了でき、今回の出撃戦績（総挑戦数、取得数、取得率）が通知されます。
+            </li>
+          </ol>
+        </section>
+
+        <section class="modal-section">
+          <h3>🗂️ 山札（デッキ）と自動リシャッフル</h3>
+          <p>
+            本ツールは「山札（デッキ）方式」を採用しているため、<strong>同じカードが重複して出力されることはありません</strong>。<br>
+            現在の絞り込み条件に一致するすべてのカードが出尽くすと、自動的に山札がリシャッフルされ、続けて抽選を継続できます。
+          </p>
+        </section>
+
+        <section class="modal-section">
+          <h3>📁 CSVデータの連携</h3>
+          <p>
+            起動時に付属の <code>SpellList.csv</code> が自動的に読み込まれます（完全オフライン・ローカル動作対応）。<br>
+            画面右上の「📁 別のCSVを読込」ボタンから、ご自身で編集・作成したCSVファイルを読み込んで独自のカスタムルーレットとして遊ぶことも可能です（Shift-JIS / UTF-8自動判別対応）。
+          </p>
+        </section>
+
+        <section class="modal-section">
+          <h3>📜 クレジット & 二次創作ガイドライン</h3>
+          <ul class="modal-bullet-list">
+            <li>本作品は <strong>『上海アリス幻樂団』</strong> 様が権利を保有する <strong>『東方Project』</strong> の二次創作物（ファンメイドツール）です。</li>
+            <li>東方Projectの二次創作ガイドラインに準拠して制作・公開されています。</li>
+            <li>東方Project公式ガイドライン: <a href="https://touhou-project.news/guideline/" target="_blank" rel="noopener noreferrer">https://touhou-project.news/guideline/</a></li>
+          </ul>
+        </section>
+      </div>
+
+      <footer class="modal-footer">
+        <a href="https://github.com/MishimaShiro/TouhouSpellDice#readme" target="_blank" rel="noopener noreferrer" class="btn btn-secondary modal-github-link">
+          🔗 GitHubでREADMEを見る
+        </a>
+        <button type="button" id="btn-modal-close-footer" class="btn btn-primary modal-close-btn">
+          閉じる
+        </button>
+      </footer>
+    </div>
   </div>
 
   <!-- JavaScript -->

@@ -765,7 +765,14 @@ const DOM = {
   historyCount: document.getElementById('history-count'),
   historyList: document.getElementById('history-list'),
   removedCount: document.getElementById('removed-count'),
-  removedList: document.getElementById('removed-list')
+  removedList: document.getElementById('removed-list'),
+
+  // READMEモーダル関連
+  readmeModal: document.getElementById('readme-modal'),
+  btnOpenReadme: document.getElementById('btn-open-readme'),
+  btnCloseReadme: document.getElementById('btn-close-readme'),
+  btnModalCloseFooter: document.getElementById('btn-modal-close-footer'),
+  btnFooterReadme: document.getElementById('btn-footer-readme')
 };
 
 // ==========================================================================
@@ -1965,7 +1972,10 @@ function setupEventListeners() {
   DOM.btnPass.addEventListener('click', () => GameController.pass());
   DOM.btnRemove.addEventListener('click', () => GameController.removeCurrent());
 
-  // 10. Store 変更通知に対するリアクティブUI同期
+  // 10. README / ガイドモーダルの開閉制御
+  ReadmeModalController.init();
+
+  // 11. Store 変更通知に対するリアクティブUI同期
   appStore.subscribe((newState, prevState, changedKeys) => {
     const onlyGaiden = SpellFilterEngine.isOnlyGaidenSelected(newState.selectedWorks);
 
@@ -1993,6 +2003,63 @@ function setupEventListeners() {
     ViewRenderer.updateButtonStates();
   });
 }
+
+/**
+ * README / ガイドモーダルコントローラー
+ */
+const ReadmeModalController = {
+  open() {
+    if (!DOM.readmeModal) return;
+    DOM.readmeModal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+    if (DOM.btnCloseReadme) {
+      DOM.btnCloseReadme.focus();
+    }
+  },
+
+  close() {
+    if (!DOM.readmeModal) return;
+    DOM.readmeModal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+    if (DOM.btnOpenReadme) {
+      DOM.btnOpenReadme.focus();
+    }
+  },
+
+  init() {
+    if (!DOM.readmeModal) return;
+
+    // 開くボタン（ヘッダー & フッター）
+    if (DOM.btnOpenReadme) {
+      DOM.btnOpenReadme.addEventListener('click', () => this.open());
+    }
+    if (DOM.btnFooterReadme) {
+      DOM.btnFooterReadme.addEventListener('click', () => this.open());
+    }
+
+    // 閉じるボタン（ヘッダー✕ & フッター閉じる）
+    if (DOM.btnCloseReadme) {
+      DOM.btnCloseReadme.addEventListener('click', () => this.close());
+    }
+    if (DOM.btnModalCloseFooter) {
+      DOM.btnModalCloseFooter.addEventListener('click', () => this.close());
+    }
+
+    // オーバーレイ背景クリックで閉じる
+    DOM.readmeModal.addEventListener('click', (e) => {
+      if (e.target === DOM.readmeModal) {
+        this.close();
+      }
+    });
+
+    // キーボード操作: Escapeキーで閉じる
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !DOM.readmeModal.classList.contains('hidden')) {
+        this.close();
+      }
+    });
+  }
+};
 
 // ==========================================================================
 // アプリケーション初期化ブートストラップ
