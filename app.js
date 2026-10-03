@@ -2009,57 +2009,74 @@ function setupEventListeners() {
  */
 const ReadmeModalController = {
   open() {
-    if (!DOM.readmeModal) return;
-    DOM.readmeModal.classList.remove('hidden');
+    const modal = document.getElementById('readme-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
     document.body.classList.add('modal-open');
-    if (DOM.btnCloseReadme) {
-      DOM.btnCloseReadme.focus();
+    const closeBtn = document.getElementById('btn-close-readme');
+    if (closeBtn) {
+      closeBtn.focus();
     }
   },
 
   close() {
-    if (!DOM.readmeModal) return;
-    DOM.readmeModal.classList.add('hidden');
+    const modal = document.getElementById('readme-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
     document.body.classList.remove('modal-open');
-    if (DOM.btnOpenReadme) {
-      DOM.btnOpenReadme.focus();
+    const openBtn = document.getElementById('btn-open-readme');
+    if (openBtn) {
+      openBtn.focus();
     }
   },
 
   init() {
-    if (!DOM.readmeModal) return;
+    const modal = document.getElementById('readme-modal');
+    const btnOpen = document.getElementById('btn-open-readme');
+    const btnFooter = document.getElementById('btn-footer-readme');
+    const btnClose = document.getElementById('btn-close-readme');
+    const btnCloseFooter = document.getElementById('btn-modal-close-footer');
 
     // 開くボタン（ヘッダー & フッター）
-    if (DOM.btnOpenReadme) {
-      DOM.btnOpenReadme.addEventListener('click', () => this.open());
+    if (btnOpen) {
+      btnOpen.addEventListener('click', () => this.open());
     }
-    if (DOM.btnFooterReadme) {
-      DOM.btnFooterReadme.addEventListener('click', () => this.open());
+    if (btnFooter) {
+      btnFooter.addEventListener('click', () => this.open());
     }
 
     // 閉じるボタン（ヘッダー✕ & フッター閉じる）
-    if (DOM.btnCloseReadme) {
-      DOM.btnCloseReadme.addEventListener('click', () => this.close());
+    if (btnClose) {
+      btnClose.addEventListener('click', () => this.close());
     }
-    if (DOM.btnModalCloseFooter) {
-      DOM.btnModalCloseFooter.addEventListener('click', () => this.close());
+    if (btnCloseFooter) {
+      btnCloseFooter.addEventListener('click', () => this.close());
     }
 
     // オーバーレイ背景クリックで閉じる
-    DOM.readmeModal.addEventListener('click', (e) => {
-      if (e.target === DOM.readmeModal) {
-        this.close();
-      }
-    });
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.close();
+        }
+      });
+    }
 
     // キーボード操作: Escapeキーで閉じる
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !DOM.readmeModal.classList.contains('hidden')) {
+      const activeModal = document.getElementById('readme-modal');
+      if (e.key === 'Escape' && activeModal && !activeModal.classList.contains('hidden') && activeModal.style.display !== 'none') {
         this.close();
       }
     });
   }
 };
+
+// グローバル関数として公開 (HTML inline onclick のフォールバック対応)
+window.openReadmeModal = () => ReadmeModalController.open();
+window.closeReadmeModal = () => ReadmeModalController.close();
 
 // ==========================================================================
 // アプリケーション初期化ブートストラップ
