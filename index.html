@@ -39,8 +39,163 @@
       </div>
     </header>
 
-    <!-- Main Layout Grid -->
-    <main class="main-layout">
+    <!-- Mode Navigation Tabs Bar (Always accessible, indicates current mode) -->
+    <nav class="mode-nav-bar" id="mode-nav-bar" aria-label="ゲームモード切り替え">
+      <div class="mode-nav-container">
+        <div class="mode-nav-group">
+          <span class="mode-nav-group-label">🎮 ソロ:</span>
+          <button type="button" class="btn-mode-tab" data-mode="solo-roulette" aria-pressed="false">
+            <span class="tab-icon">🎲</span> ランダム排出機
+          </button>
+          <button type="button" class="btn-mode-tab" data-mode="solo-bingo" aria-pressed="false">
+            <span class="tab-icon">⏱️</span> ソロビンゴ
+          </button>
+        </div>
+        <div class="mode-nav-divider" aria-hidden="true"></div>
+        <div class="mode-nav-group">
+          <span class="mode-nav-group-label">⚔️ 対戦 (ビンゴ):</span>
+          <button type="button" class="btn-mode-tab" data-mode="versus-individual" aria-pressed="false">
+            <span class="tab-icon">👤</span> 個人戦 (最大8人)
+          </button>
+          <button type="button" class="btn-mode-tab" data-mode="versus-team" aria-pressed="false">
+            <span class="tab-icon">👥</span> チーム戦
+          </button>
+        </div>
+        <div class="mode-nav-actions">
+          <button type="button" id="btn-return-landing" class="btn-mode-return" title="モード選択画面に戻る">
+            <span class="btn-icon">🏠</span> モード選択へ
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Mode Selection Landing Screen (Gate: displayed until mode is selected) -->
+    <section class="mode-landing-screen" id="view-mode-landing" aria-label="ゲームモード選択">
+      <div class="landing-hero">
+        <span class="landing-badge">MODE SELECT</span>
+        <h2 class="landing-title">ゲームモードを選択してください</h2>
+        <p class="landing-desc">遊ぶスタイルに合わせてモードを選択してください。モードを選択すると該当の画面が展開されます。</p>
+      </div>
+
+      <div class="mode-cards-grid">
+        <!-- Category 1: Solo Play -->
+        <div class="mode-category-column">
+          <div class="category-header">
+            <span class="category-icon">🎮</span>
+            <div class="category-info">
+              <h3 class="category-title">ソロプレイ</h3>
+              <p class="category-sub">1人でじっくり練習・課題挑戦</p>
+            </div>
+          </div>
+
+          <div class="mode-card-list">
+            <!-- Solo 1: Roulette -->
+            <article class="mode-card" data-mode-card="solo-roulette">
+              <div class="mode-card-header">
+                <div class="mode-card-title-group">
+                  <span class="mode-icon">🎲</span>
+                  <h4 class="mode-card-title">ランダム排出機</h4>
+                </div>
+                <span class="mode-card-badge badge-solo">ソロ専用</span>
+              </div>
+              <p class="mode-card-desc">
+                東方全18作品・2,259枚のスペルカードから条件付きで1枚ずつランダム抽選。お題プレイや苦手スペカの反復練習、鑑賞に最適です。
+              </p>
+              <div class="mode-card-features">
+                <span class="feature-tag">✔ 作品・難易度・ステージ絞り込み</span>
+                <span class="feature-tag">✔ 山札（重複なし）＆履歴機能</span>
+                <span class="feature-tag">✔ 取得 / 失敗の判定記録</span>
+              </div>
+              <button type="button" class="btn-select-mode btn-select-roulette" data-select-mode="solo-roulette">
+                ランダム排出機を開始 →
+              </button>
+            </article>
+
+            <!-- Solo 2: Solo Bingo -->
+            <article class="mode-card" data-mode-card="solo-bingo">
+              <div class="mode-card-header">
+                <div class="mode-card-title-group">
+                  <span class="mode-icon">⏱️</span>
+                  <h4 class="mode-card-title">ソロビンゴ (タイムアタック)</h4>
+                </div>
+                <span class="mode-card-badge badge-timeattack">タイムアタック</span>
+              </div>
+              <p class="mode-card-desc">
+                1人で3×3や5×5のビンゴ盤面に挑戦！制限時間内でのライン達成や、全マス制覇（ブラックアウト）の最速クリアを目指します。
+              </p>
+              <div class="mode-card-features">
+                <span class="feature-tag">✔ 3×3 / 5×5 盤面サイズ選択</span>
+                <span class="feature-tag">✔ ストップウォッチ・タイマー機能</span>
+                <span class="feature-tag">✔ クリアタイム記録＆リザルト</span>
+              </div>
+              <button type="button" class="btn-select-mode btn-select-solobingo" data-select-mode="solo-bingo">
+                ソロビンゴを開始 →
+              </button>
+            </article>
+          </div>
+        </div>
+
+        <!-- Category 2: Versus Play -->
+        <div class="mode-category-column">
+          <div class="category-header">
+            <span class="category-icon">⚔️</span>
+            <div class="category-info">
+              <h3 class="category-title">対戦プレイ (ビンゴ)</h3>
+              <p class="category-sub">Discord画面共有・オフライン対戦向け</p>
+            </div>
+          </div>
+
+          <div class="mode-card-list">
+            <!-- Versus 1: Individual -->
+            <article class="mode-card" data-mode-card="versus-individual">
+              <div class="mode-card-header">
+                <div class="mode-card-title-group">
+                  <span class="mode-icon">👤</span>
+                  <h4 class="mode-card-title">個人戦 (最大8人)</h4>
+                </div>
+                <span class="mode-card-badge badge-versus">2〜8人対応</span>
+              </div>
+              <p class="mode-card-desc">
+                最大8人対応のバトルロイヤル！マスを早い者勝ちで奪い合うロックアウトビンゴ。相手のリーチ阻止や激戦区の奪い合いが白熱！
+              </p>
+              <div class="mode-card-features">
+                <span class="feature-tag">✔ 2〜8人までの識別カラー対応</span>
+                <span class="feature-tag">✔ GM用ワンクリック判定UI</span>
+                <span class="feature-tag">✔ リアルタイムスコアボード</span>
+              </div>
+              <button type="button" class="btn-select-mode btn-select-individual" data-select-mode="versus-individual">
+                個人戦ビンゴを開始 →
+              </button>
+            </article>
+
+            <!-- Versus 2: Team -->
+            <article class="mode-card" data-mode-card="versus-team">
+              <div class="mode-card-header">
+                <div class="mode-card-title-group">
+                  <span class="mode-icon">👥</span>
+                  <h4 class="mode-card-title">チーム戦 (紅白・タッグ対抗)</h4>
+                </div>
+                <span class="mode-card-badge badge-team">チーム対抗</span>
+              </div>
+              <p class="mode-card-desc">
+                Red vs Blue などのチームに分かれ、仲間と手分けして盤面を制圧！メンバー同士の役割分担と連携が勝利の鍵となります。
+              </p>
+              <div class="mode-card-features">
+                <span class="feature-tag">✔ チーム共有スコア＆ライン集計</span>
+                <span class="feature-tag">✔ 各自が好きなマスに同時出撃</span>
+                <span class="feature-tag">✔ チーム勝利アナウンス演出</span>
+              </div>
+              <button type="button" class="btn-select-mode btn-select-team" data-select-mode="versus-team">
+                チーム戦ビンゴを開始 →
+              </button>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Layout Grid (Solo Roulette View - initially hidden until mode is selected) -->
+    <main class="main-layout hidden" id="view-solo-roulette">
       <!-- Left Panel: Filters -->
       <aside class="panel filter-panel" aria-label="絞り込み設定">
         <h2 class="panel-title">絞り込み条件</h2>
@@ -387,6 +542,22 @@
         </div>
       </section>
     </main>
+
+    <!-- Bingo Game View Container (Solo Bingo, Versus Individual, Versus Team) -->
+    <section class="bingo-layout hidden" id="view-bingo-container" aria-label="ビンゴゲーム画面">
+      <div class="bingo-placeholder-card">
+        <div class="bingo-placeholder-icon">🎯</div>
+        <h3 class="bingo-placeholder-title" id="bingo-view-title">ビンゴ対戦モード</h3>
+        <p class="bingo-placeholder-desc" id="bingo-view-desc">
+          このモードの画面は現在開発・準備中です。次のステップで盤面生成・判定システムを実装します。
+        </p>
+        <div class="bingo-placeholder-actions">
+          <button type="button" class="btn btn-secondary" onclick="window.returnToModeLanding?.()">
+            <span class="btn-icon">🏠</span> モード選択に戻る
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- Footer -->
     <footer class="app-footer">

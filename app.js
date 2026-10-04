@@ -45,6 +45,17 @@ const DIFFICULTY_ORDER = [
 ];
 
 /**
+ * ゲームモード定義
+ */
+const GAME_MODES = {
+  NONE: 'none',                         // 未選択（初期ランディング画面）
+  SOLO_ROULETTE: 'solo-roulette',       // ソロ: ランダム排出機（既存機能）
+  SOLO_BINGO: 'solo-bingo',             // ソロ: ビンゴ（タイムアタック）
+  VERSUS_INDIVIDUAL: 'versus-individual', // 対戦: 個人戦ビンゴ（最大8人）
+  VERSUS_TEAM: 'versus-team'            // 対戦: チーム戦ビンゴ
+};
+
+/**
  * 合体スペカ（複数人キャラ）判定ヘルパー
  * @param {string} name
  * @returns {boolean}
@@ -593,7 +604,10 @@ class AppStore {
       selectedStages: new Set(),
       selectedCharacter: '',
       survivalFilter: 'both', // 'both' | 'normal' | 'survival'
-      finalFilter: 'both'     // 'both' | 'normal' | 'final'
+      finalFilter: 'both',    // 'both' | 'normal' | 'final'
+
+      // ゲームモード状態
+      currentMode: GAME_MODES.NONE // 初期状態は未選択（ランディング画面表示）
     };
     this._listeners = new Set();
   }
@@ -804,6 +818,15 @@ class AppStore {
       finalFilter
     });
   }
+
+  /**
+   * ゲームモードの切り替え設定
+   * @param {string} mode GAME_MODESの値
+   */
+  setGameMode(mode) {
+    if (this._state.currentMode === mode) return;
+    this.setState({ currentMode: mode });
+  }
 }
 
 // ストアのインスタンス生成
@@ -908,7 +931,19 @@ const DOM = {
   btnOpenReadme: document.getElementById('btn-open-readme'),
   btnCloseReadme: document.getElementById('btn-close-readme'),
   btnModalCloseFooter: document.getElementById('btn-modal-close-footer'),
-  btnFooterReadme: document.getElementById('btn-footer-readme')
+  btnFooterReadme: document.getElementById('btn-footer-readme'),
+
+  // モード選択・ナビゲーション関連
+  modeNavBar: document.getElementById('mode-nav-bar'),
+  modeTabs: document.querySelectorAll('.btn-mode-tab'),
+  btnReturnLanding: document.getElementById('btn-return-landing'),
+  viewModeLanding: document.getElementById('view-mode-landing'),
+  viewSoloRoulette: document.getElementById('view-solo-roulette'),
+  viewBingoContainer: document.getElementById('view-bingo-container'),
+  bingoViewTitle: document.getElementById('bingo-view-title'),
+  bingoViewDesc: document.getElementById('bingo-view-desc'),
+  modeSelectButtons: document.querySelectorAll('[data-select-mode]'),
+  modeCards: document.querySelectorAll('.mode-card')
 };
 
 // ==========================================================================
@@ -920,6 +955,64 @@ const DOM = {
  */
 const ViewRenderer = {
   _notificationTimer: null,
+
+  /**
+   * ゲームモード画面の切り替えレンダリング
+   * @param {string} mode
+   */
+  renderModeView(mode) {
+    const isLanding = mode === GAME_MODES.NONE || !mode;
+    const isRoulette = mode === GAME_MODES.SOLO_ROULETTE;
+    const isBingo = mode === GAME_MODES.SOLO_BINGO || mode === GAME_MODES.VERSUS_INDIVIDUAL || mode === GAME_MODES.VERSUS_TEAM;
+
+    // ランディング画面（未選択時のゲート）表示切り替え
+    if (DOM.viewModeLanding) {
+      DOM.viewModeLanding.classList.toggle('hidden', !isLanding);
+    }
+
+    // 元の情報（ソロルーレット・絞り込み・ゲーム進行）表示切り替え
+    if (DOM.viewSoloRoulette) {
+      DOM.viewSoloRoulette.classList.toggle('hidden', !isRoulette);
+    }
+
+    // ビンゴ画面コンテナ表示切り替え
+    if (DOM.viewBingoContainer) {
+      DOM.viewBingoContainer.classList.toggle('hidden', !isBingo);
+    }
+
+    // ナビゲーションバーのタブのアクティブ状態更新
+    if (DOM.modeTabs) {
+      DOM.modeTabs.forEach(tab => {
+        const tabMode = tab.dataset.mode;
+        const isActive = tabMode === mode;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    }
+
+    // ビンゴ画面プレースホルダーのタイトルと説明の更新
+    if (isBingo && DOM.bingoViewTitle && DOM.bingoViewDesc) {
+      if (mode === GAME_MODES.SOLO_BINGO) {
+        DOM.bingoViewTitle.textContent = '⏱️ ソロビンゴ (タイムアタック)';
+        DOM.bingoViewDesc.textContent = '1人でビンゴ盤面に挑戦するモードです。次ステップで盤面生成・タイマー・クリア判定システムを実装します。';
+      } else if (mode === GAME_MODES.VERSUS_INDIVIDUAL) {
+        DOM.bingoViewTitle.textContent = '👤 個人戦ビンゴ (最大8人)';
+        DOM.bingoViewDesc.textContent = '最大8人で早い者勝ちでマスを奪い合う対戦モードです。次ステップで8色対応盤面・GM判定UIを実装します。';
+      } else if (mode === GAME_MODES.VERSUS_TEAM) {
+        DOM.bingoViewTitle.textContent = '👥 チーム戦ビンゴ (紅白・タッグ対抗)';
+        DOM.bingoViewDesc.textContent = 'チームで連携してマスを制圧する対戦モードです。次ステップでチーム共有スコア・ライン集計システムを実装します。';
+      }
+    }
+
+    // ルーレットモードに切り替わった場合、ボタン状態や件数表示を再同期
+    if (isRoulette) {
+      this.updateFilteredCountDisplay();
+      this.updateButtonStates();
+    }
+
+    // 画面上部へスクロール（スムーズな画面遷移感）
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
 
   /**
    * アクティブカードの描画（属性セレクタ [data-diff] スタイリング & ARIA通知）
@@ -2288,11 +2381,48 @@ function setupEventListeners() {
   DOM.btnPass.addEventListener('click', () => GameController.pass());
   DOM.btnRemove.addEventListener('click', () => GameController.removeCurrent());
 
-  // 10. README / ガイドモーダルの開閉制御
+  // 10. ゲームモード切り替えイベント
+  // A. ランディング画面のカードボタン
+  if (DOM.modeSelectButtons) {
+    DOM.modeSelectButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.currentTarget.dataset.selectMode;
+        if (mode) {
+          appStore.setGameMode(mode);
+        }
+      });
+    });
+  }
+
+  // B. モードナビゲーションバーのタブボタン
+  if (DOM.modeTabs) {
+    DOM.modeTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const mode = e.currentTarget.dataset.mode;
+        if (mode) {
+          appStore.setGameMode(mode);
+        }
+      });
+    });
+  }
+
+  // C. モード選択へ戻るボタン
+  if (DOM.btnReturnLanding) {
+    DOM.btnReturnLanding.addEventListener('click', () => {
+      appStore.setGameMode(GAME_MODES.NONE);
+    });
+  }
+
+  // 11. README / ガイドモーダルの開閉制御
   ReadmeModalController.init();
 
-  // 11. Store 変更通知に対するリアクティブUI同期
+  // 12. Store 変更通知に対するリアクティブUI同期
   appStore.subscribe((newState, prevState, changedKeys) => {
+    // ゲームモード切り替えの反映
+    if (changedKeys.includes('currentMode')) {
+      ViewRenderer.renderModeView(newState.currentMode);
+    }
+
     const onlyGaiden = SpellFilterEngine.isOnlyGaidenSelected(newState.selectedWorks);
 
     // 作品選択のバリデーション警告 & 連動UI更新
@@ -2394,11 +2524,14 @@ const ReadmeModalController = {
 // グローバル関数として公開 (HTML inline onclick のフォールバック対応)
 window.openReadmeModal = () => ReadmeModalController.open();
 window.closeReadmeModal = () => ReadmeModalController.close();
+window.returnToModeLanding = () => appStore.setGameMode(GAME_MODES.NONE);
 
 // ==========================================================================
 // アプリケーション初期化ブートストラップ
 // ==========================================================================
 window.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  // 初期画面表示: モード未選択（ランディング画面を表示し、元の情報は非表示）
+  ViewRenderer.renderModeView(GAME_MODES.NONE);
   DataService.loadDefaultCSV();
 });
