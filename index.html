@@ -3,7 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>東方スペルカード抽選器 - Spell Card Roulette</title>
+  <title>東方スペルカード抽選器 - Touhou Spell Card Roulette</title>
+  <meta name="description" content="東方Projectのスペルカードを作品・難易度・ステージ・キャラ等で絞り込み、ランダムに抽選できるWebツール。全18作品・2,259枚完全収録。お題プレイ・縛りプレイ・練習ルーレットに。">
+  <meta name="theme-color" content="#260c12">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Open Graph Protocol (OGP) -->
+  <meta property="og:title" content="東方スペルカード抽選器 - Touhou Spell Card Roulette">
+  <meta property="og:description" content="全18作品・2,259枚完全収録！作品・難易度・ステージ・キャラ等で絞り込み可能な東方Projectスペルカード抽選Webアプリ。お題プレイや練習ルーレットに。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mishimashiro.github.io/TouhouSpellDice/">
+  <meta property="og:image" content="https://mishimashiro.github.io/TouhouSpellDice/og-image.png">
+  <meta property="og:site_name" content="東方スペルカード抽選器">
+  <meta property="og:locale" content="ja_JP">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="東方スペルカード抽選器 - Touhou Spell Card Roulette">
+  <meta name="twitter:description" content="全18作品・2,259枚完全収録！作品・難易度・ステージ・キャラ等で絞り込み可能な東方Projectスペルカード抽選Webアプリ。お題プレイや練習ルーレットに。">
+  <meta name="twitter:image" content="https://mishimashiro.github.io/TouhouSpellDice/og-image.png">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +30,7 @@
   <!-- PapaParse CDN with Subresource Integrity (SRI) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous"></script>
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20261003_5">
+  <link rel="stylesheet" href="style.css?v=20261012_1">
 </head>
 <body>
   <div class="app-container">
@@ -30,6 +49,12 @@
           <span class="btn-icon">📁</span> 別のCSVを読込
           <input type="file" id="csv-file-input" accept=".csv" class="hidden-input">
         </label>
+        <button type="button" id="btn-header-share-x" class="btn-header-action btn-header-share" title="東方スペルカード抽選器をX (Twitter) でシェア" aria-label="X (Twitter) でシェア">
+          <svg class="x-icon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span class="share-text">𝕏 シェア</span>
+        </button>
         <a href="https://github.com/MishimaShiro/TouhouSpellDice" target="_blank" rel="noopener noreferrer" class="btn-header-action btn-github-link" title="GitHubリポジトリ (README・ソースコード)" aria-label="GitHubリポジトリを開く">
           <svg class="github-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="currentColor">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
@@ -351,8 +376,14 @@
           </div>
         </div>
 
-        <!-- Auxiliary Action Buttons (パス / リストから削除) -->
+        <!-- Auxiliary Action Buttons (Xシェア / パス / リストから削除) -->
         <div class="card-manipulation-buttons">
+          <button type="button" id="btn-share-card-x" class="btn btn-share-x" disabled title="表示中のスペルカードと挑戦結果をX (Twitter) にポスト">
+            <svg class="x-icon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            <span>結果を𝕏で共有</span>
+          </button>
           <button type="button" id="btn-pass" class="btn btn-warning" disabled title="1回の出力につき1度だけ再抽選できます">
             <span class="btn-icon">↩</span> パス (引き直し)
           </button>

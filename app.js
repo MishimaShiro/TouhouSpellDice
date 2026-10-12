@@ -877,6 +877,8 @@ const DOM = {
   btnDraw: document.getElementById('btn-draw'),
   btnPass: document.getElementById('btn-pass'),
   btnRemove: document.getElementById('btn-remove'),
+  btnShareCardX: document.getElementById('btn-share-card-x'),
+  btnHeaderShareX: document.getElementById('btn-header-share-x'),
 
   // 挑戦判定ボタン (取得 / 取得失敗)
   btnCaptureSuccess: document.getElementById('btn-capture-success'),
@@ -1583,6 +1585,11 @@ const ViewRenderer = {
 
     // 削除ボタン: 現在カードが存在するとき活性
     DOM.btnRemove.disabled = !deckManager.isActive || !deckManager.currentCard;
+
+    // Xシェアボタン: 現在カードが存在するとき活性
+    if (DOM.btnShareCardX) {
+      DOM.btnShareCardX.disabled = !deckManager.isActive || !deckManager.currentCard;
+    }
   },
 
   /**
@@ -2054,6 +2061,45 @@ const GameController = {
     ViewRenderer.showPlaceholder();
     ViewRenderer.showNotification(`「${result.removedCard.name}」を山札から除外しました。`, 'info');
     ViewRenderer.updateButtonStates();
+  },
+
+  /**
+   * サイト全体の紹介をX (Twitter) でシェア
+   */
+  shareSiteOnX() {
+    const text = '全18作品・2,259枚のスペルカードを条件付きでランダム抽選！\n東方スペルカード抽選器 (Touhou Spell Card Roulette)\nお題プレイ・縛りプレイ・練習ルーレットに🎲\n#東方スペルカード抽選器 #東方Project';
+    const url = 'https://mishimashiro.github.io/TouhouSpellDice/';
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  },
+
+  /**
+   * 現在表示中のスペルカード抽選結果をX (Twitter) でシェア
+   */
+  shareCardOnX() {
+    const currentCard = appStore.deckManager.currentCard;
+    if (!currentCard) {
+      ViewRenderer.showNotification('シェア対象のスペルカードがありません。', 'warning');
+      return;
+    }
+
+    const challengeState = appStore.deckManager.challengeState;
+    let resultHeader = '東方スペルカード抽選器で抽選しました！';
+    if (challengeState === 'success') {
+      resultHeader = '東方スペルカード抽選器で挑戦しました！【取得成功✨】';
+    } else if (challengeState === 'failed') {
+      resultHeader = '東方スペルカード抽選器で挑戦しました！【取得失敗💥】';
+    }
+
+    const stageStr = currentCard.stage ? ` ${SpellFilterEngine.formatStageLabel(currentCard.stage)}` : '';
+    const diffStr = currentCard.difficulty ? ` [${currentCard.difficulty}]` : '';
+    const survivalStr = currentCard.isSurvival ? ' (耐久)' : '';
+    const finalStr = currentCard.isFinal ? ' (Final)' : '';
+
+    const text = `${resultHeader}\n\n【${currentCard.workName}】${stageStr}${diffStr}${survivalStr}${finalStr}\n${currentCard.name} (${currentCard.character})\n\n#東方スペルカード抽選器 #東方Project`;
+    const url = 'https://mishimashiro.github.io/TouhouSpellDice/';
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
   }
 };
 
@@ -2284,9 +2330,15 @@ function setupEventListeners() {
   DOM.btnCaptureSuccess.addEventListener('click', () => GameController.recordResult(true));
   DOM.btnCaptureFailed.addEventListener('click', () => GameController.recordResult(false));
 
-  // 9. パス & 削除ボタン
+  // 9. パス & 削除 & Xシェアボタン
   DOM.btnPass.addEventListener('click', () => GameController.pass());
   DOM.btnRemove.addEventListener('click', () => GameController.removeCurrent());
+  if (DOM.btnShareCardX) {
+    DOM.btnShareCardX.addEventListener('click', () => GameController.shareCardOnX());
+  }
+  if (DOM.btnHeaderShareX) {
+    DOM.btnHeaderShareX.addEventListener('click', () => GameController.shareSiteOnX());
+  }
 
   // 10. README / ガイドモーダルの開閉制御
   ReadmeModalController.init();

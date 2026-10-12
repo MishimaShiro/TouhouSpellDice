@@ -68,13 +68,16 @@
 
 ```text
 TouhouSpellDice/
-├── index.html        # アプリケーションのメインHTML
+├── index.html        # アプリケーションのメインHTML (OGP/Twitterカード対応)
 ├── style.css         # スタイリング (和風ダークテーマ / レスポンシブ対応)
-├── app.js            # メインロジック (フィルタエンジン、山札管理、UI制御)
+├── app.js            # メインロジック (フィルタエンジン、山札管理、UI制御、X共有)
 ├── spellData.js      # フォールバック用スペルカード内蔵データ (自動生成)
 ├── SpellList.csv     # スペルカードデータマスター (CSV) ※データ編集対象
 ├── build_data.py     # CSVからspellData.jsを自動生成するビルドスクリプト (Python 3)
 ├── build_data.bat    # Windows用ワンクリック自動生成バッチ
+├── favicon.svg       # 陰陽玉モチーフのSVGファビコン
+├── og-image.png      # SNS共有用OGPアイキャッチ画像 (1200x630)
+├── LICENSE           # ライセンス (MIT License + 二次創作ガイドライン特記事項)
 ├── .gitignore        # Git除外設定
 └── README.md         # 本ドキュメント
 ```
@@ -100,3 +103,10 @@ TouhouSpellDice/
 - 本作品は **『上海アリス幻樂団』** 様が権利を保有する **『東方Project』** の二次創作物（ファンメイドツール）です。
 - 東方Projectの二次創作ガイドラインに準拠して制作・公開されています。
 - 東方Project公式ガイドライン: [東方Projectの二次創作ガイドライン](https://touhou-project.news/guideline/)
+
+---
+
+## 📄 ライセンス (License)
+
+本ソフトウェアのプログラムコードは **[MIT License](LICENSE)** に基づいて公開されています。  
+※ただし、東方Projectに関わる名称・世界観・著作権等は上海アリス幻樂団（ZUN様）に帰属し、公式の二次創作ガイドラインが優先されます。詳細は [LICENSE](LICENSE) をご覧ください。
